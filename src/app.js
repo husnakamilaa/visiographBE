@@ -1,8 +1,13 @@
 require("dotenv").config();
-require("./config/database");
 
 const express = require("express");
 const cors = require("cors");
+
+const authRoutes = require("./routes/authRoutes");
+const anggotaRoutes = require("./routes/anggotaRoutes");
+const barangRoutes = require("./routes/barangRoutes");
+const peminjamanRoutes = require("./routes/peminjamanRoutes");
+const kerusakanRoutes = require("./routes/kerusakanRoutes");
 
 const app = express();
 
@@ -13,15 +18,13 @@ app.get("/", (req, res) => {
   res.json({ message: "API Visiograph running" });
 });
 
-//route login
-const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
-
-// buat yang anggota dulu
-const anggotaRoutes = require("./routes/anggotaRoutes");
 app.use("/api/anggota", anggotaRoutes);
+app.use("/api/barang", barangRoutes);
+app.use("/api/peminjaman", peminjamanRoutes);
+app.use("/api/kerusakan", kerusakanRoutes);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
