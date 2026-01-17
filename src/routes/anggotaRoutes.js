@@ -4,11 +4,11 @@ const router = express.Router();
 const anggotaController = require("../controllers/anggotaController");
 
 
-router.post("/", authMiddleware, anggotaController.createAnggota);
-router.get("/", authMiddleware, anggotaController.getAllAnggota);
-router.get("/search", authMiddleware, anggotaController.searchAnggota);
-router.get("/:id", authMiddleware, anggotaController.getAnggotaById);
-router.put("/:id", authMiddleware, anggotaController.updateAnggota);
-router.delete("/:id", authMiddleware, anggotaController.deleteAnggota);
+router.post("/", anggotaController.createAnggota);
+router.get("/", anggotaController.getAllAnggota);
+router.get("/search", anggotaController.searchAnggota);
+router.get("/:id", anggotaController.getAnggotaById);
+router.put("/:id",  anggotaController.updateAnggota);
+router.delete("/:id", anggotaController.deleteAnggota);
 
 module.exports = router;
