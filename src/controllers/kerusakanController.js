@@ -4,36 +4,45 @@ const db = require("../config/database");
  * CREATE kerusakan
  */
 exports.createKerusakan = (req, res) => {
-  const {
-    id_barang,
-    deskripsi,
-    jumlah,
-    tanggal,
-    status_perbaikan
-  } = req.body;
+  const { id_barang, deskripsi, jumlah, tanggal, status_perbaikan } = req.body;
 
-  const sql = `
-    INSERT INTO kerusakan
-    (id_barang, deskripsi, jumlah, tanggal, status_perbaikan)
-    VALUES (?, ?, ?, ?, ?)
-  `;
+  db.beginTransaction((err) => {
+    if (err) return res.status(500).json({ message: "Gagal memulai transaksi", error: err });
 
-  db.query(
-    sql,
-    [id_barang, deskripsi, jumlah, tanggal, status_perbaikan],
-    (err) => {
+    const sqlInsert = `
+      INSERT INTO kerusakan (id_barang, deskripsi, jumlah, tanggal, status_perbaikan) 
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    db.query(sqlInsert, [id_barang, deskripsi, jumlah, tanggal, status_perbaikan], (err, result) => {
       if (err) {
-        return res.status(500).json({
-          message: "Gagal menambah kerusakan",
-          error: err.message
+        return db.rollback(() => {
+          res.status(500).json({ message: "Gagal simpan data kerusakan", error: err });
         });
       }
+    
+      const sqlUpdateStok = `
+        UPDATE barang 
+        SET jumlah_total = jumlah_total - ? 
+        WHERE id = ?
+      `;
 
-      res.status(201).json({
-        message: "Data kerusakan berhasil ditambahkan"
+      db.query(sqlUpdateStok, [jumlah, id_barang], (err, result) => {
+        if (err) {
+          return db.rollback(() => {
+            res.status(500).json({ message: "Gagal update stok barang", error: err });
+          });
+        }
+
+        db.commit((err) => {
+          if (err) {
+            return db.rollback(() => res.status(500).json(err));
+          }
+          res.status(201).json({ message: "Data kerusakan berhasil ditambah & stok barang berkurang" });
+        });
       });
-    }
-  );
+    });
+  });
 };
 
 /**

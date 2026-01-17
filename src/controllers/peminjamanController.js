@@ -13,28 +13,52 @@ exports.createPeminjaman = (req, res) => {
     status_pinjam
   } = req.body;
 
-  const sql = `
-    INSERT INTO peminjaman
-    (id_barang, id_anggota, tanggal_pinjam, tanggal_kembali, jumlah_pinjam, status_pinjam)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
+  // 1. CEK STOK BARANG DULU KIDSZ //////////////////////////////////////////////////////////////////////////////////////////
+  const sqlCheckStok = "SELECT nama, jumlah_total FROM barang WHERE id = ?";
+  
+  db.query(sqlCheckStok, [id_barang], (err, results) => {
+    if (err) return res.status(500).json({ message: "Error saat cek stok", error: err.message });
+    
+    if (results.length === 0) return res.status(404).json({ message: "Barang tidak ditemukan" });
 
-  db.query(
-    sql,
-    [id_barang, id_anggota, tanggal_pinjam, tanggal_kembali, jumlah_pinjam, status_pinjam],
-    (err) => {
-      if (err) {
-        return res.status(500).json({
-          message: "Gagal menambah peminjaman",
-          error: err.message
-        });
-      }
-
-      res.status(201).json({
-        message: "Peminjaman berhasil ditambahkan"
+    const barang = results[0];
+    
+    if (barang.jumlah_total < jumlah_pinjam) { // stok hrs lbh banyak
+      return res.status(400).json({ 
+        message: `Stok tidak mencukupi! ${barang.nama} sisa ${barang.jumlah_total}` 
       });
     }
-  );
+
+    // 2. BARU INSERT /////////////////////////////////////////////////////////////////////////////////
+    const sqlInsert = `
+      INSERT INTO peminjaman
+      (id_barang, id_anggota, tanggal_pinjam, tanggal_kembali, jumlah_pinjam, status_pinjam)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      sqlInsert,
+      [id_barang, id_anggota, tanggal_pinjam, tanggal_kembali, jumlah_pinjam, status_pinjam],
+      (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Gagal menambah peminjaman", error: err.message });
+        }
+
+        // 3. UPDATE STOK DI TABEL BARANG (KURANGI STOK) ///////////////////////////////////////////////////////////
+        const sqlUpdateStok = "UPDATE barang SET jumlah_total = jumlah_total - ? WHERE id = ?";
+        
+        db.query(sqlUpdateStok, [jumlah_pinjam, id_barang], (updateErr) => {
+          if (updateErr) {
+            console.error("Gagal update stok:", updateErr.message);
+          }
+
+          res.status(201).json({
+            message: "Peminjaman berhasil ditambahkan dan stok barang diperbarui"
+          });
+        });
+      }
+    );
+  });
 };
 
 /**

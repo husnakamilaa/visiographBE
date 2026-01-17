@@ -16,7 +16,7 @@ exports.login = (req, res) => {
   const sql = "SELECT * FROM users WHERE username = ?";
   db.query(sql, [username], (err, results) => {
     if (err) {
-      return res.status(500).json({
+      return res.sstatus(500).json({
         message: "Server error",
         code: "SERVER_ERROR"
       });
@@ -32,25 +32,24 @@ exports.login = (req, res) => {
 
     const user = results[0];
 
-    // ❌ password salah
-    const isMatch = bcrypt.compareSync(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({
-        message: "Password salah",
-        code: "WRONG_PASSWORD"
+    bcrypt.compare(password, user.password, (err, isMatch) => {
+      if (err || !isMatch) {
+          return res.status(401).json({
+              message: "Password salah",
+              code: "WRONG_PASSWORD"
+          });
+      }
+      const token = jwt.sign(
+        { id: user.id, username: user.username },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES }
+      );
+
+      res.status(200).json({
+        message: "Login berhasil",
+        token: token
       });
-    }
 
-    // ✅ login sukses
-    const token = jwt.sign(
-      { id: user.id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES }
-    );
-
-    res.status(200).json({
-      message: "Login berhasil",
-      token: token
     });
   });
 };
