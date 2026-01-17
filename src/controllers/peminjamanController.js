@@ -73,7 +73,13 @@ exports.getAllPeminjaman = (req, res) => {
 exports.getPeminjamanById = (req, res) => {
   const { id } = req.params;
 
-  const sql = "SELECT * FROM peminjaman WHERE id = ?";
+  const sql = `SELECT p.*, a.nama AS nama_anggota, b.nama AS nama_barang
+    FROM peminjaman p
+    JOIN anggota a ON p.id_anggota = a.id
+    JOIN barang b ON p.id_barang = b.id
+    WHERE p.id = ?
+  `;
+  
   db.query(sql, [id], (err, results) => {
     if (err) return res.status(500).json(err);
 

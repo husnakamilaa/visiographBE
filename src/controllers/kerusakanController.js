@@ -59,7 +59,10 @@ exports.getAllKerusakan = (req, res) => {
 exports.getKerusakanById = (req, res) => {
   const { id } = req.params;
 
-  const sql = "SELECT * FROM kerusakan WHERE id = ?";
+  const sql = `SELECT k.*, b.nama AS nama_barang
+    FROM kerusakan k
+    JOIN barang b ON k.id_barang = b.id
+    WHERE k.id = ?`;
   db.query(sql, [id], (err, results) => {
     if (err) return res.status(500).json(err);
 
